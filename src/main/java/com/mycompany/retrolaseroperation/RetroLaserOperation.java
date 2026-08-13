@@ -4,6 +4,8 @@
 
 package com.mycompany.retrolaseroperation;
 
+import javax.swing.JFrame;
+
 /**
  *
  * @author gabri
@@ -11,6 +13,22 @@ package com.mycompany.retrolaseroperation;
 public class RetroLaserOperation {
 
     public static void main(String[] args) {
-        System.out.println("Hello World!");
+        JFrame window = new JFrame("Retro Laser Operation");
+        
+        GamePanel game = new GamePanel();
+        
+        window.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        
+        window.setResizable(true);
+        
+        window.add(game);
+        
+        window.pack();
+        
+        window.setLocationRelativeTo(null);
+        
+        window.setVisible(true);
+        
+        game.requestFocusInWindow();        
     }
 }
