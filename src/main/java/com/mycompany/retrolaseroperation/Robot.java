@@ -7,6 +7,7 @@ package com.mycompany.retrolaseroperation;
 import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Graphics2D;
+import java.awt.Point;
 import java.awt.Shape;
 import java.awt.geom.AffineTransform;
 import java.awt.geom.Arc2D;
@@ -25,12 +26,12 @@ public class Robot {
     protected double x;
     private final int y = 600;
     
-    protected double cannonAngle;
+    protected double cannonAngle=0;
     protected double recoil = 0;
+    protected boolean canShoot = true;
     
     public Robot(double x){
         this.x = x;
-        this.cannonAngle = 0;
     }
     
     public void aimAt(double mouseX, double mouseY){
@@ -55,8 +56,24 @@ public class Robot {
     }
     
     public void shoot(double mouseX, double mouseY){
-        this.recoil =1;
-        System.out.println("atirado");
+        if(canShoot){
+            this.recoil =1;
+            System.out.println("atirado");
+        }
+        
+    }
+    
+    public Point getCannonTip() {
+
+        double cannonLength = 35 * (1.0 - recoil * 0.5);
+
+        double localX =50- Math.sin(cannonAngle)* cannonLength;
+        double localY = 80+ Math.cos(cannonAngle)* cannonLength;
+
+        int screenX =(int) (x + localX);
+        int screenY =(int) (y - localY);
+
+        return new Point(screenX,screenY);
     }
     
     private void drawSquare(Graphics2D g2d, double centerX, double centerY){

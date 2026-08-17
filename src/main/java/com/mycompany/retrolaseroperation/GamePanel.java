@@ -22,6 +22,11 @@ import java.awt.event.MouseListener;
 import java.awt.event.MouseMotionListener;
 import java.awt.font.GlyphVector;
 import java.awt.geom.AffineTransform;
+import java.awt.geom.Line2D;
+import java.awt.geom.Rectangle2D;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
 import javax.swing.JPanel;
 import javax.swing.Timer;
 
@@ -42,6 +47,7 @@ public class GamePanel extends JPanel implements ActionListener, KeyListener, Mo
     private final Timer timer;
     
     private Robot robot;
+    private List<Meteor> meteors;
     
     private int mouseX;
     private int mouseY;
@@ -51,10 +57,15 @@ public class GamePanel extends JPanel implements ActionListener, KeyListener, Mo
     
     private boolean isShooting;
     
+    private int meteorTimer = 0;
+    
     private int score = 0;
     private int level = 1;
     private int energy = 100;
     private STATES state;
+    private int refreshEnergy = 0;
+    
+    private Font menuFont;
     
     
     public GamePanel(){
@@ -66,13 +77,18 @@ public class GamePanel extends JPanel implements ActionListener, KeyListener, Mo
         
         addKeyListener(this);
         
-        addMouseMotionListener(this);
-        
         addMouseListener(this);
+        
+        addMouseMotionListener(this);
         
         state = STATES.MENU;
         
         robot = new Robot(WIDTH/5.0);
+        
+        meteors = new ArrayList<Meteor>();
+        
+        
+        loadFont();
         
         timer = new Timer(Math.round(1000/FRAMES), this);
         
@@ -80,6 +96,14 @@ public class GamePanel extends JPanel implements ActionListener, KeyListener, Mo
     }
     
     private void updateGame(){
+        int newLevel = score / 1000 + 1;
+
+        if (newLevel > level) {
+            level = newLevel;
+
+            energy =100;
+            robot.canShoot = true;
+        }
         double speed = 5;
         if(left){
             robot.x -= speed;
@@ -89,12 +113,63 @@ public class GamePanel extends JPanel implements ActionListener, KeyListener, Mo
             robot.x += speed;
             robot.x = Math.min(robot.x, WIDTH-100);
         }
+        
         robot.recoil*=0.8;
         if(robot.recoil<0.1){
             robot.recoil = 0;
         }
-    
+        
+        meteorTimer++;
+
+        if (meteorTimer >= 60) {
+
+            meteors.add(
+                    new Meteor(level)
+            );
+
+        meteorTimer = 0;
 }
+        for(Meteor meteor: meteors){
+            meteor.update();
+            if(meteor.hit()){
+                state = STATES.OVER;
+                break;
+            }
+        }
+        if(state == STATES.OVER){
+            meteors.clear();
+        }
+        meteors.removeIf(
+            Meteor::isOutside
+            );
+    
+    
+    }
+    
+    private void resetGame(){
+        meteors.clear();
+        robot.x = WIDTH/2;
+        level=1;
+        energy=100;
+        score = 0;
+        robot.canShoot = true;
+        robot.recoil = 0;
+        meteorTimer = 0;
+        left = false;
+        right = false;
+    }
+    
+    private void loadFont(){
+        try{
+            menuFont = Font.createFont(Font.TRUETYPE_FONT, getClass().getResourceAsStream("/Barrio-Regular.ttf"));
+            menuFont = menuFont.deriveFont(48f);
+            
+        }catch(Exception e){
+            e.printStackTrace();
+            
+            menuFont = new Font("SansSerif",Font.BOLD, 48);
+        }
+    }
     
     @Override
     protected void paintComponent(Graphics g){
@@ -113,59 +188,117 @@ public class GamePanel extends JPanel implements ActionListener, KeyListener, Mo
     }
     
     private void drawMenu(Graphics2D g2d) {
-        drawStringOnCenter(g2d, "Teste G2D", 0);
+        g2d.setFont(menuFont);
+        g2d.setColor(Color.black);
+        drawStringOnCenter(g2d, "RetroLaser", 0);
+        g2d.setFont(menuFont.deriveFont(20f));
+        drawStringOnCenter(g2d,"Pressiona qualquer tecla", 50);
     }
 
     private void drawPause(Graphics2D g2d) {
-        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
-    }
+
+        drawGame(g2d);
+
+        g2d.setColor(
+                new Color(255, 255, 255, 180)
+        );
+
+        g2d.fillRect(
+                0,
+                0,
+                WIDTH,
+                HEIGHT
+        );
+
+        g2d.setColor(Color.BLACK);
+
+        g2d.setFont(menuFont);
+
+        drawStringOnCenter(
+                g2d,
+                "PAUSED",
+                0
+        );
+}
 
     private void drawGame(Graphics2D g2d) {
         robot.draw(g2d);
+        
+        for(Meteor x: meteors){
+            x.draw(g2d);
+        }
+        
+        drawLaser(g2d);
+        
+        drawHud(g2d);
     }
 
     private void drawOver(Graphics2D g2d) {
-        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
+        g2d.setFont(menuFont);
+        g2d.setColor(Color.red);
+        drawStringOnCenter(g2d, "GAME OVER", 0);
     }
     
-    private void drawStringOnCenter(
-            Graphics2D g2d,
-            String text,
-            int offSet
+    private void drawLaser(Graphics2D g2d){
+        
+    }
+    
+    private void drawStringOnCenter(Graphics2D g2d,String text,int offSet
     ) {
 
-        FontMetrics metrics =
-                g2d.getFontMetrics();
+        FontMetrics metrics = g2d.getFontMetrics();
 
-        int textWidth =
-                metrics.stringWidth(
-                        text
-                );
+        int textWidth =metrics.stringWidth( text);
         
         int textHeight = metrics.getHeight();
 
-        int x =
-                (WIDTH - textWidth)
-                / 2;
+        int x =(WIDTH - textWidth)/ 2;
 
         int centerY = ((HEIGHT - textHeight)/2)+offSet;
         
-        /*
-         * Aqui centerY representa
-         * aproximadamente a linha-base.
-         */
-
-        g2d.drawString(
-                text,
-                x,
-                centerY
-        );
+        g2d.drawString(text,x,centerY);
     }
+    
+    private void drawHud(Graphics2D g2d){
+        
+    Shape background = new Rectangle2D.Double(0,0,WIDTH, 50);
+    
+    g2d.setColor(Color.white);
+    g2d.fill(background);
+
+    g2d.draw(background);
+    // linha separando o HUD do jogo
+    Shape linha1 = new Line2D.Double(0,50, WIDTH,50);
+
+    g2d.setColor(Color.BLACK);
+    g2d.draw(linha1);
+
+    g2d.setFont(menuFont.deriveFont(20f));
+
+    g2d.setColor(Color.BLACK);
+
+    String piloto = "PILOTO: GABRIEL";
+
+    g2d.drawString(piloto, 20, 32);
+
+    String scoreText = "SCORE: " + score;
+
+    g2d.drawString( scoreText,250, 32);
+
+    String levelText ="LEVEL: " + level;
+
+    g2d.drawString(levelText,430,32);
+
+    String energyText = "ENERGIA: " + energy + "%";
+
+    g2d.drawString(energyText,590,32);
+}
 
     @Override
     public void actionPerformed(java.awt.event.ActionEvent e) {
-        updateGame();
-
+        if(state == STATES.PLAYING){
+            updateGame();        
+        }
         repaint();
     }
 
@@ -175,16 +308,43 @@ public class GamePanel extends JPanel implements ActionListener, KeyListener, Mo
 
     @Override
     public void keyPressed(KeyEvent e) {
-        if(state != STATES.PLAYING){
+
+        int key = e.getKeyCode();
+
+        if(state == STATES.MENU){
             state = STATES.PLAYING;
-        }else{
-            int key = e.getKeyCode();
-            if(key == KeyEvent.VK_LEFT || key == KeyEvent.VK_A){
-                left = true;
+            return;
+        }
+
+        if(state == STATES.OVER){
+            resetGame();
+            state = STATES.PLAYING;
+            return;
+        }
+
+        if(state == STATES.PAUSED){
+            if(key == KeyEvent.VK_ESCAPE){
+                state = STATES.PLAYING;
             }
-            if(key == KeyEvent.VK_RIGHT || key == KeyEvent.VK_D){
-                right = true;
-            }
+            return;
+        }
+
+        if(key == KeyEvent.VK_ESCAPE){
+
+            state = STATES.PAUSED;
+
+            left = false;
+            right = false;
+
+            return;
+        }
+
+        if(key == KeyEvent.VK_LEFT|| key == KeyEvent.VK_A){
+            left = true;
+        }
+
+        if(key == KeyEvent.VK_RIGHT|| key == KeyEvent.VK_D){
+            right = true;
         }
     }
 
@@ -209,15 +369,28 @@ public class GamePanel extends JPanel implements ActionListener, KeyListener, Mo
     }
 
     @Override
-    public void mouseClicked(MouseEvent e) {
-        if(state == STATES.PLAYING){
-            robot.shoot(e.getX(), e.getY());
-        }
-        
+    public void mouseClicked(MouseEvent e) {   
     }
 
     @Override
     public void mousePressed(MouseEvent e) {
+        if(state == STATES.PLAYING){
+            if(!robot.canShoot) return;
+            robot.shoot(e.getX(), e.getY());
+            Iterator<Meteor> iterator = meteors.iterator();
+            this.energy+=-10+Math.min(level, 6);
+            this.energy = Math.max(this.energy, 0);
+            if(this.energy == 0) robot.canShoot = false;
+            while(iterator.hasNext()){
+                Meteor meteor = iterator.next();
+                if(meteor.isShot(e.getX(), e.getY())){
+                    iterator.remove();
+                    score+=100;
+                    break;
+                }
+            }
+            
+        }
     }
     @Override
     public void mouseReleased(MouseEvent e) {
