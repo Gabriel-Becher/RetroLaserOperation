@@ -12,6 +12,7 @@ import java.awt.FontMetrics;
 import java.awt.GradientPaint;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
+import java.awt.Point;
 import java.awt.Rectangle;
 import java.awt.Shape;
 import java.awt.event.ActionListener;
@@ -59,11 +60,16 @@ public class GamePanel extends JPanel implements ActionListener, KeyListener, Mo
     
     private int meteorTimer = 0;
     
+    private int laserTimer = 0;
+    
     private int score = 0;
     private int level = 1;
     private int energy = 100;
     private STATES state;
     private int refreshEnergy = 0;
+    
+    private Point lastTarget;
+
     
     private Font menuFont;
     
@@ -86,6 +92,7 @@ public class GamePanel extends JPanel implements ActionListener, KeyListener, Mo
         robot = new Robot(WIDTH/5.0);
         
         meteors = new ArrayList<Meteor>();
+        
         
         
         loadFont();
@@ -142,6 +149,9 @@ public class GamePanel extends JPanel implements ActionListener, KeyListener, Mo
         meteors.removeIf(
             Meteor::isOutside
             );
+        if(laserTimer>0){
+            laserTimer--;
+        }
     
     
     }
@@ -157,6 +167,7 @@ public class GamePanel extends JPanel implements ActionListener, KeyListener, Mo
         meteorTimer = 0;
         left = false;
         right = false;
+        laserTimer = 0;
     }
     
     private void loadFont(){
@@ -193,6 +204,19 @@ public class GamePanel extends JPanel implements ActionListener, KeyListener, Mo
         drawStringOnCenter(g2d, "RetroLaser", 0);
         g2d.setFont(menuFont.deriveFont(20f));
         drawStringOnCenter(g2d,"Pressiona qualquer tecla", 50);
+    }
+    
+    private void drawLaser(Graphics2D g2d){
+        if(laserTimer <=0 || lastTarget == null){
+            return;
+        }
+        Point start = robot.getCannonTip();
+        List<Bresenham.Passo> pontos = Bresenham.bresenhamAlgorithm(start, lastTarget);
+        g2d.setColor(Color.red);
+        
+        for(Bresenham.Passo ponto: pontos){
+            g2d.fillRect(ponto.x, ponto.y, 2, 2);
+        }
     }
 
     private void drawPause(Graphics2D g2d) {
@@ -237,10 +261,6 @@ public class GamePanel extends JPanel implements ActionListener, KeyListener, Mo
         g2d.setFont(menuFont);
         g2d.setColor(Color.red);
         drawStringOnCenter(g2d, "GAME OVER", 0);
-    }
-    
-    private void drawLaser(Graphics2D g2d){
-        
     }
     
     private void drawStringOnCenter(Graphics2D g2d,String text,int offSet
@@ -377,6 +397,8 @@ public class GamePanel extends JPanel implements ActionListener, KeyListener, Mo
         if(state == STATES.PLAYING){
             if(!robot.canShoot) return;
             robot.shoot(e.getX(), e.getY());
+            lastTarget= new Point(e.getX(),e.getY());
+            laserTimer = 8;
             Iterator<Meteor> iterator = meteors.iterator();
             this.energy+=-10+Math.min(level, 6);
             this.energy = Math.max(this.energy, 0);
