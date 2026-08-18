@@ -68,8 +68,7 @@ public class GamePanel extends JPanel implements ActionListener, KeyListener, Mo
     private STATES state;
     private int refreshEnergy = 0;
     
-    private Point lastTarget;
-
+    List<Bresenham.Passo> lastShot = null;
     
     private Font menuFont;
     
@@ -92,8 +91,6 @@ public class GamePanel extends JPanel implements ActionListener, KeyListener, Mo
         robot = new Robot(WIDTH/5.0);
         
         meteors = new ArrayList<Meteor>();
-        
-        
         
         loadFont();
         
@@ -207,11 +204,10 @@ public class GamePanel extends JPanel implements ActionListener, KeyListener, Mo
     }
     
     private void drawLaser(Graphics2D g2d){
-        if(laserTimer <=0 || lastTarget == null){
+        if(laserTimer <=0 || lastShot == null){
             return;
         }
-        Point start = robot.getCannonTip();
-        List<Bresenham.Passo> pontos = Bresenham.bresenhamAlgorithm(start, lastTarget);
+        List<Bresenham.Passo> pontos = lastShot;
         g2d.setColor(Color.red);
         
         for(Bresenham.Passo ponto: pontos){
@@ -397,14 +393,13 @@ public class GamePanel extends JPanel implements ActionListener, KeyListener, Mo
         if(state == STATES.PLAYING){
             if(!robot.canShoot) return;
             robot.shoot(e.getX(), e.getY());
-            lastTarget= new Point(e.getX(),e.getY());
+            lastShot = Bresenham.bresenhamAlgorithm(robot.getCannonTip(), new Point(e.getX(), e.getY()));
             laserTimer = 8;
             Iterator<Meteor> iterator = meteors.iterator();
             this.energy+=-10+Math.min(level, 6);
             this.energy = Math.max(this.energy, 0);
             if(this.energy == 0) robot.canShoot = false;
-            Point start = robot.getCannonTip();
-            List<Bresenham.Passo> pontos = Bresenham.bresenhamAlgorithm(start, lastTarget);
+            List<Bresenham.Passo> pontos = lastShot;
             boolean spent = false;
             while(iterator.hasNext()){
                 Meteor meteor = iterator.next();
