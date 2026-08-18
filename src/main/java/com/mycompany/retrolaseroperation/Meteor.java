@@ -163,8 +163,8 @@ public class Meteor {
     }
     
     public boolean hit(){
-        
-        return y>(GamePanel.HEIGHT+size/2);
+       
+        return y+size/2>GamePanel.HEIGHT;
 
     }
 }
