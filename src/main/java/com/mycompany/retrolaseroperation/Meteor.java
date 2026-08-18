@@ -151,7 +151,15 @@ public class Meteor {
     }
     
     public boolean isShot(double mouseX, double mouseY){
-        return ((mouseX>this.x) && (mouseX<(this.x+this.size)) && (mouseY>this.y) && (mouseY<(this.y+this.size)));
+        double centerX = x+size/2;
+        double centerY = y+size/2;
+        
+        double localdx = centerX - mouseX;
+        double localdy = centerY - mouseY;
+        
+        double radius = size/2;
+        
+        return ((localdx*localdx)+(localdy*localdy)<=(radius*radius));
     }
     
     public boolean hit(){

@@ -403,13 +403,20 @@ public class GamePanel extends JPanel implements ActionListener, KeyListener, Mo
             this.energy+=-10+Math.min(level, 6);
             this.energy = Math.max(this.energy, 0);
             if(this.energy == 0) robot.canShoot = false;
+            Point start = robot.getCannonTip();
+            List<Bresenham.Passo> pontos = Bresenham.bresenhamAlgorithm(start, lastTarget);
+            boolean spent = false;
             while(iterator.hasNext()){
                 Meteor meteor = iterator.next();
-                if(meteor.isShot(e.getX(), e.getY())){
+                for(Bresenham.Passo ponto: pontos){
+                    if(meteor.isShot(ponto.x, ponto.y)&&!spent){
                     iterator.remove();
                     score+=100;
+                    spent = true;
                     break;
                 }
+                }
+                
             }
             
         }
