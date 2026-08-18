@@ -4,16 +4,15 @@
  */
 package com.mycompany.retrolaseroperation;
 
-import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Font;
+import java.awt.FontFormatException;
 import java.awt.FontMetrics;
 import java.awt.GradientPaint;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.Point;
-import java.awt.Rectangle;
 import java.awt.Shape;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
@@ -21,10 +20,9 @@ import java.awt.event.KeyListener;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.awt.event.MouseMotionListener;
-import java.awt.font.GlyphVector;
-import java.awt.geom.AffineTransform;
 import java.awt.geom.Line2D;
 import java.awt.geom.Rectangle2D;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -47,16 +45,11 @@ public class GamePanel extends JPanel implements ActionListener, KeyListener, Mo
     
     private final Timer timer;
     
-    private Robot robot;
-    private List<Meteor> meteors;
-    
-    private int mouseX;
-    private int mouseY;
+    private final Robot robot;
+    private final List<Meteor> meteors;
     
     private boolean left;
     private boolean right;
-    
-    private boolean isShooting;
     
     private int meteorTimer = 0;
     
@@ -65,6 +58,7 @@ public class GamePanel extends JPanel implements ActionListener, KeyListener, Mo
     private int score = 0;
     private int level = 1;
     private int energy = 100;
+    
     private STATES state;
     
     private int refreshEnergy = 0;
@@ -91,7 +85,7 @@ public class GamePanel extends JPanel implements ActionListener, KeyListener, Mo
         
         robot = new Robot(WIDTH/5.0);
         
-        meteors = new ArrayList<Meteor>();
+        meteors = new ArrayList<>();
         
         loadFont();
         
@@ -112,10 +106,7 @@ public class GamePanel extends JPanel implements ActionListener, KeyListener, Mo
             energy = Math.min(energy+5,100);
             refreshEnergy = 0;
         }
-        if(refreshEnergy >= 120 && energy == 100){
-            refreshEnergy = 0;
-        }
-        
+                
         double speed = 5;
         if(left){
             robot.x -= speed;
@@ -180,9 +171,7 @@ public class GamePanel extends JPanel implements ActionListener, KeyListener, Mo
             menuFont = Font.createFont(Font.TRUETYPE_FONT, getClass().getResourceAsStream("/Barrio-Regular.ttf"));
             menuFont = menuFont.deriveFont(48f);
             
-        }catch(Exception e){
-            e.printStackTrace();
-            
+        }catch(FontFormatException | IOException e){
             menuFont = new Font("SansSerif",Font.BOLD, 48);
         }
     }
@@ -224,9 +213,9 @@ public class GamePanel extends JPanel implements ActionListener, KeyListener, Mo
         
         g2d.setFont(menuFont.deriveFont(20f));
         g2d.setColor(new Color(200,200,200,50));
-        drawStringOnCenter(g2d,"Pressione qualquer tecla para iniciar", 55,5);
+        drawStringOnCenter(g2d,"Pressione qualquer tecla para iniciar", 5,55);
         g2d.setPaint(titleGradient);
-        drawStringOnCenter(g2d,"Pressione qualquer tecla para iniciar", 50,0);
+        drawStringOnCenter(g2d,"Pressione qualquer tecla para iniciar", 0,50);
         
     }
     
@@ -267,7 +256,7 @@ public class GamePanel extends JPanel implements ActionListener, KeyListener, Mo
 
         drawStringOnCenter(g2d,"PAUSE",0,0);
         g2d.setFont(menuFont.deriveFont(24f));
-        drawStringOnCenter(g2d,"Pressione ESC para continuar", 12,0);
+        drawStringOnCenter(g2d,"Pressione ESC para continuar", 0,12);
 }
 
     private void drawGame(Graphics2D g2d) {
@@ -287,7 +276,7 @@ public class GamePanel extends JPanel implements ActionListener, KeyListener, Mo
         g2d.setColor(Color.red);
         drawStringOnCenter(g2d, "GAME OVER", 0,0);
         g2d.setFont(menuFont.deriveFont(24f));
-        drawStringOnCenter(g2d, "Pressione qualquer tecla para reiniciar", 12,0);
+        drawStringOnCenter(g2d, "Pressione qualquer tecla para reiniciar", 0,12);
     }
     
     private void drawStringOnCenter(Graphics2D g2d,String text,int xOffSet, int yOffSet
@@ -299,9 +288,9 @@ public class GamePanel extends JPanel implements ActionListener, KeyListener, Mo
         
         int textHeight = metrics.getHeight();
 
-        int x =(WIDTH - textWidth)/ 2+yOffSet;
+        int x =(WIDTH - textWidth)/ 2+xOffSet;
 
-        int centerY = ((HEIGHT - textHeight)/2)+xOffSet;
+        int centerY = ((HEIGHT - textHeight)/2)+yOffSet;
         
         g2d.drawString(text,x,centerY);
     }
@@ -422,7 +411,7 @@ public class GamePanel extends JPanel implements ActionListener, KeyListener, Mo
     @Override
     public void mousePressed(MouseEvent e) {
         if(state == STATES.PLAYING){
-            if(!robot.canShoot && energy<10) return;
+            if(!robot.canShoot || energy<10) return;
             
             lastShot = Bresenham.bresenhamAlgorithm(robot.getCannonTip(), new Point(e.getX(), e.getY()));
             robot.shoot(e.getX(), e.getY());

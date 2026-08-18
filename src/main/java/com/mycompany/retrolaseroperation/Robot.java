@@ -58,7 +58,6 @@ public class Robot {
     public void shoot(double mouseX, double mouseY){
         if(canShoot){
             this.recoil =1;
-            System.out.println("atirado");
         }
         
     }
